@@ -1,0 +1,159 @@
+import sys
+import requests
+from PyQt5.QtWidgets import (QLabel, QMainWindow, QApplication,
+                              QWidget, QPushButton,QLineEdit, QVBoxLayout, QHBoxLayout)
+from PyQt5.QtCore import Qt
+
+class WeatherApp(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.city_label = QLabel("enter the city name ", self)
+        self.text_box = QLineEdit(self)
+        self.get_weather_button = QPushButton("get weather")
+        self.temperature_label = QLabel(self)
+        self.emoji_label = QLabel(self)
+        self.discription_label = QLabel(self)
+        self.setWindowTitle("gui weather app")
+        self.setGeometry(1300, 450, 500, 600)
+
+        self.initUI()
+
+
+
+
+
+    def initUI(self):
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(self.city_label)
+        vbox.addWidget(self.text_box)
+        vbox.addWidget(self.get_weather_button)
+        vbox.addWidget(self.temperature_label)
+        vbox.addWidget(self.discription_label)
+        vbox.addWidget(self.emoji_label)
+
+        
+
+        self.setLayout(vbox)
+
+        self.city_label.setStyleSheet("font-size: 30px;")
+        self.temperature_label.setStyleSheet("font-size: 50px")
+        self.temperature_label.setAlignment(Qt.AlignCenter)
+        self.get_weather_button.setStyleSheet("font-size: 30px;")
+        self.get_weather_button.setStyleSheet("hover{background-color: lightblue;}")
+        self.text_box.setStyleSheet("hover{background-color: lightblue;}")
+
+        self.emoji_label.setStyleSheet("font-size: 50px;")
+        self.emoji_label.setAlignment(Qt.AlignCenter)
+        self.discription_label.setAlignment(Qt.AlignCenter)
+        self.discription_label.setStyleSheet("font-size: 30px;")
+        self.text_box.setStyleSheet("font-size: 30px")
+
+
+        self.get_weather_button.clicked.connect(self.get_weather)
+
+        
+
+
+    def get_weather(self):
+        api_key = "6d6229a24b7591f8619f3815f4ae7c07"
+
+        city = self.text_box.text()
+        url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}"
+
+        # response = requests.get(url)
+        # data = response.json()
+
+        # print(data)
+
+        # temperature_ = data["main"]["temp"]
+        # print(temperature_,"°C")
+
+        # self.display_error(data)
+
+
+
+        #http errrors
+        try:
+            response = requests.get(url)
+
+            response.raise_for_status()
+
+            data = response.json()
+            temperature_ = data["main"]["temp"]
+
+
+            print(data)
+            if data["cod"] == 200:
+                self.display_error(temperature_)
+                self.discription_label.setText(f"is the temperature at {city}")
+
+        except requests.exceptions.HTTPError as httperror:
+            match response.status_code:
+                case 400:
+                    self.discription_label.setText("bad request input invalid")
+                case 401:
+                    self.discription_label.setText("unauthorized \n invalid api key")
+                case 403:
+                    self.discription_label.setText("access is denied (forbidden)")
+                case 404:
+                    self.discription_label.setText("city not found")
+                case 500:
+                    self.discription_label.setText("internal server error try again later")
+                case 502:
+                    self.discription_label.setText("bad gateway invalid response from the server")
+                case 503:
+                    self.discription_label.setText("server unavailable ")
+                case 504:
+                    self.discription_label.setText("gateway timeout \n no response from the server")
+                case _:
+                    self.discription_label.setText(f"httperror occured at {httperror} ")
+        except requests.exceptions.ConnectionError:
+            self.discription_label.setText("connection error \n check your internet connection")
+        except requests.exceptions.Timeout:
+            self.discription_label.setText("Timeout errors \n the request timeout ")
+            
+        except requests.exceptions.TooManyRedirects:
+            self.discription_label.setText("Too many redirects \n check the url")
+
+        except requests.exceptions.HTTPError as req_error:
+            self.discription_label.setText(f"request error; \n {req_error}")
+
+            
+
+
+            
+
+            # if response.status_code == 404:
+            #     self.discription_label.setText(("city not found"))
+            # if response.status_code == 200:
+            #     self.discription_label.setText(f"is the temperature of {city}")
+            # if response.status_code == 500:
+            #     self.discription_label.setText(f"the server is busy \n it not your problem")
+            
+        
+        # except 404:
+        #     print("city not found")
+        # except 200:
+        #     print(f"is the temperature of {city}")
+
+
+
+    def display_error(self, temperature_):
+
+        tempa = int(temperature_ - 273.15)
+        print(f"{tempa:2}°c")
+        self.temperature_label.setText(str(f"{tempa:02}°c"))
+
+    def display_weather(self, data, tempa):
+
+        # self.temperature_label.setText(temperature_)
+        print(data)
+        self.setWindowTitle("weather app")
+        self.setGeometry(1300, 650, 300, 300)
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    weather_app = WeatherApp()
+    weather_app.show()
+    sys.exit(app.exec_())
